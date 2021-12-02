@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+    <!-- <script src="data.json" type="application/json"></script> -->
+    <!-- <script src="tracker.js" type="application/javascript"></script> -->
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+
+    <title>Document</title>
+
+    <script>
+      class MagicFunLore extends HTMLElement {
+        connectedCallback() {
+          const API_ROOT_PATH = "https://www.bungie.net";
+          const PLATFORM = "/Platform";
+          // const API_ROOT_PATH = "https://www.bungie.net";
+          const AUTHORIZE = "https://www.bungie.net/en/OAuth/Authorize";
+          // const API_KEY = "d24cfacbe90b404782da36ed1ad8d5f8";
+          const API_KEY = "c68f8ef939094aee8b166c500e8773e3";
+          const CUSTOM_HEADERS = {
+            "X-API-KEY": API_KEY,
+            "Content-Type": "application/json",
+          };
+          const CORS_HEADERS = {
+            "X-API-KEY": API_KEY,
+            Accept: "application/json",
+            "x-msw-bypass": true,
+            "Access-Control-Allow-Origin": "*",
+            "Control-Allow-Origin": "*",
+          };
+
+          let vendors = "/Destiny2/Vendors/";
+          let content = "/Destiny2/Manifest/";
+          let promiseList = [];
+          let loreList = [];
+
+          function init() {
+            callEndpoint(
+              API_ROOT_PATH + PLATFORM + content,
+              CUSTOM_HEADERS
+            ).then(
+              function (response) {
+                // console.log("vendors", response.Response);
+                if (
+                  response.Response &&
+                  response.Response.jsonWorldContentPaths
+                ) {
+                  loadLore(response.Response.jsonWorldContentPaths.es);
+                }
+              },
+              function (error) {
+                // console.log("Something wrong happened", error);
+              }
+            );
+
+            function loadLore(url) {
+              // console.log("Loading Lore... ", url);
+
+              $.getJSON(API_ROOT_PATH + url).then(saveLore);
+            }
+
+            function saveLore(response) {
+              // console.log("JSON", Object.keys(response));
+              // console.log("MORE:::", response.DestinyNodeStepSummaryDefinition);
+              if (response.DestinyLoreDefinition) {
+                // console.log(Object.keys(response.DestinyLoreDefinition));
+                console.log(
+                  response.DestinyLoreDefinition[
+                    Object.keys(response.DestinyLoreDefinition)[0]
+                  ]
+                );
+                var foundPages = document.createElement("p");
+                foundPages.style = "bold";
+                foundPages.innerHTML =
+                  "Páginas de LORE encontradas: <u>" +
+                  Object.keys(response.DestinyLoreDefinition).length +
+                  "</u>";
+                document.getElementById("content").appendChild(foundPages);
+                Object.keys(response.DestinyLoreDefinition).forEach((lore) => {
+                  var currentObj = response.DestinyLoreDefinition[lore];
+                  var currentLore = {
+                    title: currentObj.displayProperties.name,
+                    subtitle: currentObj.subtitle,
+                    hasIcon: currentObj.displayProperties.hasIcon,
+                    id: currentObj.hash,
+                    index: currentObj.index,
+                    description: currentObj.displayProperties.description,
+                  };
+                  loreList.push(currentLore);
+                });
+                loreList.sort(function (a, b) {
+                  var keyA = new Date(a.index),
+                    keyB = new Date(b.index);
+                  // Compare the 2 dates
+                  if (keyA < keyB) return -1;
+                  if (keyA > keyB) return 1;
+                  return 0;
+                });
+                loreList.forEach((lore) => printLore(lore));
+              }
+            }
+
+            function printLore(currentLore) {
+              var newTitle = document.createElement("h2");
+              newTitle.innerHTML = currentLore.title;
+              var newSubTitle = document.createElement("h4");
+              newSubTitle.innerHTML = currentLore.subtitle;
+              var newSpan = document.createElement("p");
+              newSpan.innerHTML = currentLore.description;
+              var index = document.createElement("p");
+              index.innerHTML = "Entrada número: " + (currentLore.index + 1) + "/" + loreList.length;
+              document.getElementById("content").appendChild(newTitle);
+              document.getElementById("content").appendChild(newSubTitle);
+              document.getElementById("content").appendChild(index);
+              document.getElementById("content").appendChild(newSpan);
+            }
+
+            Promise.all(promiseList).then(function () {
+              // console.log("Funciona todo?");
+              // constTable(finalTable);
+            });
+          }
+
+          init();
+
+          function callEndpoint(url, headers) {
+            let prom = new Promise(function (fulfill, reject) {
+              fetch(url, {
+                method: "GET",
+                headers: new Headers(headers),
+                // mode: "cors",
+                cache: "default",
+              })
+                .then((res) => res.json())
+                .then((json) => fulfill(json))
+                .catch((err) => reject(err));
+            });
+            promiseList.push(prom);
+            return prom;
+          }
+
+          let elements = [
+            "DestinyNodeStepSummaryDefinition",
+            "DestinyArtDyeChannelDefinition",
+            "DestinyArtDyeReferenceDefinition",
+            "DestinyPlaceDefinition",
+            "DestinyActivityDefinition",
+            "DestinyActivityTypeDefinition",
+            "DestinyClassDefinition",
+            "DestinyGenderDefinition",
+            "DestinyInventoryBucketDefinition",
+            "DestinyRaceDefinition",
+            "DestinyTalentGridDefinition",
+            "DestinyUnlockDefinition",
+            "DestinyMaterialRequirementSetDefinition",
+            "DestinySandboxPerkDefinition",
+            "DestinyStatGroupDefinition",
+            "DestinyProgressionMappingDefinition",
+            "DestinyFactionDefinition",
+            "DestinyVendorGroupDefinition",
+            "DestinyRewardSourceDefinition",
+            "DestinyUnlockValueDefinition",
+            "DestinyRewardMappingDefinition",
+            "DestinyRewardSheetDefinition",
+            "DestinyItemCategoryDefinition",
+            "DestinyDamageTypeDefinition",
+            "DestinyActivityModeDefinition",
+            "DestinyMedalTierDefinition",
+            "DestinyAchievementDefinition",
+            "DestinyActivityGraphDefinition",
+            "DestinyActivityInteractableDefinition",
+            "DestinyBondDefinition",
+            "DestinyCharacterCustomizationCategoryDefinition",
+            "DestinyCharacterCustomizationOptionDefinition",
+            "DestinyCollectibleDefinition",
+            "DestinyDestinationDefinition",
+            "DestinyEntitlementOfferDefinition",
+            "DestinyEquipmentSlotDefinition",
+            "DestinyStatDefinition",
+            "DestinyInventoryItemDefinition",
+            "DestinyInventoryItemLiteDefinition",
+            "DestinyItemTierTypeDefinition",
+            "DestinyLocationDefinition",
+            "DestinyLoreDefinition",
+            "DestinyMetricDefinition",
+            "DestinyObjectiveDefinition",
+            "DestinyPlatformBucketMappingDefinition",
+            "DestinyPlugSetDefinition",
+            "DestinyPowerCapDefinition",
+            "DestinyPresentationNodeDefinition",
+            "DestinyProgressionDefinition",
+            "DestinyProgressionLevelRequirementDefinition",
+            "DestinyRecordDefinition",
+            "DestinyRewardAdjusterPointerDefinition",
+            "DestinyRewardAdjusterProgressionMapDefinition",
+            "DestinyRewardItemListDefinition",
+            "DestinySackRewardItemListDefinition",
+            "DestinySandboxPatternDefinition",
+            "DestinySeasonDefinition",
+            "DestinySeasonPassDefinition",
+            "DestinySocketCategoryDefinition",
+            "DestinySocketTypeDefinition",
+            "DestinyTraitDefinition",
+            "DestinyTraitCategoryDefinition",
+            "DestinyUnlockCountMappingDefinition",
+            "DestinyUnlockEventDefinition",
+            "DestinyUnlockExpressionMappingDefinition",
+            "DestinyVendorDefinition",
+            "DestinyMilestoneDefinition",
+            "DestinyActivityModifierDefinition",
+            "DestinyReportReasonCategoryDefinition",
+            "DestinyArtifactDefinition",
+            "DestinyBreakerTypeDefinition",
+            "DestinyChecklistDefinition",
+            "DestinyEnergyTypeDefinition",
+          ];
+        }
+      }
+
+      customElements.define("version-tracker", MagicFunLore);
+    </script>
+    <configuration>
+      <system.webServer>
+        <httpProtocol>
+          <customHeaders>
+            <add
+              name="Access-Control-Allow-Origin"
+              value="http://example.net"
+            />
+            <add name="Access-Control-Allow-Methods" value="OPTIONS,POST" />
+            <add name="Access-Control-Allow-Credentials" value="true" />
+            <add name="Access-Control-Allow-Headers" value="Content-Type" />
+          </customHeaders>
+        </httpProtocol>
+      </system.webServer>
+    </configuration>
+  </head>
+
+  <body>
+    <div class="container col-xs-12">
+      <h1>Destiny2 Lore</h1>
+      <div id="content">
+        <version-tracker></version-tracker>
+      </div>
+    </div>
+  </body>
+</html>
