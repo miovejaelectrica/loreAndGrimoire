@@ -55,7 +55,6 @@
               CUSTOM_HEADERS
             ).then(
               function (response) {
-                // console.log("vendors", response.Response);
                 if (
                   response.Response &&
                   response.Response.jsonWorldContentPaths
@@ -63,23 +62,15 @@
                   loadLore(response.Response.jsonWorldContentPaths.es);
                 }
               },
-              function (error) {
-                // console.log("Something wrong happened", error);
-              }
+              function (error) {}
             );
           }
           function loadLore(url) {
-
             $.getJSON(API_ROOT_PATH + url).then(saveLore);
           }
 
           function saveLore(response) {
-            if (response.DestinyLoreDefinition) {
-              // console.log(
-              //   response.DestinyLoreDefinition[
-              //     Object.keys(response.DestinyLoreDefinition)[0]
-              //   ]
-              // );
+            if (response[elements["lore"]]) {
               var foundPages = document.createElement("p");
               foundPages.style = "bold";
               foundPages.innerHTML =
@@ -87,51 +78,49 @@
                 Object.keys(response.DestinyLoreDefinition).length +
                 "</u>";
               document.getElementById("numPages").appendChild(foundPages);
-              Object.keys(response.DestinyLoreDefinition).forEach((lore) => {
-                var currentObj = response.DestinyLoreDefinition[lore];
-                var currentLore = {
-                  title: currentObj.displayProperties.name,
-                  subtitle: currentObj.subtitle,
-                  hasIcon: currentObj.displayProperties.hasIcon,
-                  id: currentObj.hash,
-                  index: currentObj.index,
-                  description: currentObj.displayProperties.description,
-                };
-                loreList.push(currentLore);
+              // loreList = response[elements["lore"]];
+
+              Object.keys(response[elements["lore"]]).forEach((lore) => {
+                var entry = response[elements["lore"]][lore];
+                entry.id = lore;
+                loreList.push(entry);
               });
               loreList.sort(function (a, b) {
-                var keyA = new Date(a.index),
-                  keyB = new Date(b.index);
-                // Compare the 2 dates
-                if (keyA < keyB) return -1;
-                if (keyA > keyB) return 1;
+                if (a.index < b.index) {
+                  return -1;
+                }
+                if (a.index > b.index) {
+                  return 1;
+                }
                 return 0;
               });
-
               loreList.forEach((lore) => {
-                // console.log(lore.name, lore.hash);
-                let newOption = new Option(lore.title, lore.id);
+                let newOption = new Option(
+                  lore.displayProperties.name,
+                  lore.id
+                );
                 selectBox.add(newOption, undefined);
-                //printLore(lore);
               });
               getLore(selectBox.value);
             }
           }
 
-          function printLore(currentLore) {                       
-            document.getElementById("loreTitle").innerHTML = currentLore.title;
-            document.getElementById("loreSubTitle").innerHTML = currentLore.subtitle;
-            document.getElementById("loreDescription").innerText = currentLore.description;
+          function printLore(currentLore) {
+            document.getElementById("loreTitle").innerHTML =
+              currentLore.displayProperties.name;
+            document.getElementById("loreSubTitle").innerHTML =
+              currentLore.subtitle;
+            document.getElementById("loreDescription").innerText =
+              currentLore.displayProperties.description;
           }
 
           Promise.all(promiseList).then(function () {
-            // console.log("Funciona todo?");
             // constTable(finalTable);
           });
 
           function getLore(id) {
             if (loreList.length > 0) {
-              var thisLore = loreList.find((lore) => (lore.id == id));
+              var thisLore = loreList.find((lore) => lore.id === id);
               printLore(thisLore);
             }
           }
@@ -153,81 +142,91 @@
             return prom;
           }
 
-          let elements = [
-            "DestinyNodeStepSummaryDefinition",
-            "DestinyArtDyeChannelDefinition",
-            "DestinyArtDyeReferenceDefinition",
-            "DestinyPlaceDefinition",
-            "DestinyActivityDefinition",
-            "DestinyActivityTypeDefinition",
-            "DestinyClassDefinition",
-            "DestinyGenderDefinition",
-            "DestinyInventoryBucketDefinition",
-            "DestinyRaceDefinition",
-            "DestinyTalentGridDefinition",
-            "DestinyUnlockDefinition",
-            "DestinyMaterialRequirementSetDefinition",
-            "DestinySandboxPerkDefinition",
-            "DestinyStatGroupDefinition",
-            "DestinyProgressionMappingDefinition",
-            "DestinyFactionDefinition",
-            "DestinyVendorGroupDefinition",
-            "DestinyRewardSourceDefinition",
-            "DestinyUnlockValueDefinition",
-            "DestinyRewardMappingDefinition",
-            "DestinyRewardSheetDefinition",
-            "DestinyItemCategoryDefinition",
-            "DestinyDamageTypeDefinition",
-            "DestinyActivityModeDefinition",
-            "DestinyMedalTierDefinition",
-            "DestinyAchievementDefinition",
-            "DestinyActivityGraphDefinition",
-            "DestinyActivityInteractableDefinition",
-            "DestinyBondDefinition",
-            "DestinyCharacterCustomizationCategoryDefinition",
-            "DestinyCharacterCustomizationOptionDefinition",
-            "DestinyCollectibleDefinition",
-            "DestinyDestinationDefinition",
-            "DestinyEntitlementOfferDefinition",
-            "DestinyEquipmentSlotDefinition",
-            "DestinyStatDefinition",
-            "DestinyInventoryItemDefinition",
-            "DestinyInventoryItemLiteDefinition",
-            "DestinyItemTierTypeDefinition",
-            "DestinyLocationDefinition",
-            "DestinyLoreDefinition",
-            "DestinyMetricDefinition",
-            "DestinyObjectiveDefinition",
-            "DestinyPlatformBucketMappingDefinition",
-            "DestinyPlugSetDefinition",
-            "DestinyPowerCapDefinition",
-            "DestinyPresentationNodeDefinition",
-            "DestinyProgressionDefinition",
-            "DestinyProgressionLevelRequirementDefinition",
-            "DestinyRecordDefinition",
-            "DestinyRewardAdjusterPointerDefinition",
-            "DestinyRewardAdjusterProgressionMapDefinition",
-            "DestinyRewardItemListDefinition",
-            "DestinySackRewardItemListDefinition",
-            "DestinySandboxPatternDefinition",
-            "DestinySeasonDefinition",
-            "DestinySeasonPassDefinition",
-            "DestinySocketCategoryDefinition",
-            "DestinySocketTypeDefinition",
-            "DestinyTraitDefinition",
-            "DestinyTraitCategoryDefinition",
-            "DestinyUnlockCountMappingDefinition",
-            "DestinyUnlockEventDefinition",
-            "DestinyUnlockExpressionMappingDefinition",
-            "DestinyVendorDefinition",
-            "DestinyMilestoneDefinition",
-            "DestinyActivityModifierDefinition",
-            "DestinyReportReasonCategoryDefinition",
-            "DestinyArtifactDefinition",
-            "DestinyBreakerTypeDefinition",
-            "DestinyChecklistDefinition",
-            "DestinyEnergyTypeDefinition",
-          ];
+          let elements = {
+            NodeStepSummaryDefinition: "DestinyNodeStepSummaryDefinition",
+            ArtDyeChannelDefinition: "DestinyArtDyeChannelDefinition",
+            ArtDyeReferenceDefinition: "DestinyArtDyeReferenceDefinition",
+            PlaceDefinition: "DestinyPlaceDefinition",
+            ActivityDefinition: "DestinyActivityDefinition",
+            ActivityTypeDefinition: "DestinyActivityTypeDefinition",
+            ClassDefinition: "DestinyClassDefinition",
+            GenderDefinition: "DestinyGenderDefinition",
+            InventoryBucketDefinition: "DestinyInventoryBucketDefinition",
+            RaceDefinition: "DestinyRaceDefinition",
+            TalentGridDefinition: "DestinyTalentGridDefinition",
+            UnlockDefinition: "DestinyUnlockDefinition",
+            MaterialRequirementSetDefinition:
+              "DestinyMaterialRequirementSetDefinition",
+            SandboxPerkDefinition: "DestinySandboxPerkDefinition",
+            StatGroupDefinition: "DestinyStatGroupDefinition",
+            ProgressionMappingDefinition: "DestinyProgressionMappingDefinition",
+            FactionDefinition: "DestinyFactionDefinition",
+            VendorGroupDefinition: "DestinyVendorGroupDefinition",
+            RewardSourceDefinition: "DestinyRewardSourceDefinition",
+            UnlockValueDefinition: "DestinyUnlockValueDefinition",
+            RewardMappingDefinition: "DestinyRewardMappingDefinition",
+            RewardSheetDefinition: "DestinyRewardSheetDefinition",
+            ItemCategoryDefinition: "DestinyItemCategoryDefinition",
+            DamageTypeDefinition: "DestinyDamageTypeDefinition",
+            ActivityModeDefinition: "DestinyActivityModeDefinition",
+            MedalTierDefinition: "DestinyMedalTierDefinition",
+            AchievementDefinition: "DestinyAchievementDefinition",
+            ActivityGraphDefinition: "DestinyActivityGraphDefinition",
+            ActivityInteractableDefinition:
+              "DestinyActivityInteractableDefinition",
+            BondDefinition: "DestinyBondDefinition",
+            CharacterCustomizationCategoryDefinition:
+              "DestinyCharacterCustomizationCategoryDefinition",
+            CharacterCustomizationOptionDefinition:
+              "DestinyCharacterCustomizationOptionDefinition",
+            CollectibleDefinition: "DestinyCollectibleDefinition",
+            DestinationDefinition: "DestinyDestinationDefinition",
+            EntitlementOfferDefinition: "DestinyEntitlementOfferDefinition",
+            EquipmentSlotDefinition: "DestinyEquipmentSlotDefinition",
+            stats: "DestinyStatDefinition",
+            InventoryItemDefinition: "DestinyInventoryItemDefinition",
+            InventoryItemLiteDefinition: "DestinyInventoryItemLiteDefinition",
+            ItemTierTypeDefinition: "DestinyItemTierTypeDefinition",
+            locations: "DestinyLocationDefinition",
+            lore: "DestinyLoreDefinition",
+            MetricDefinition: "DestinyMetricDefinition",
+            ObjectiveDefinition: "DestinyObjectiveDefinition",
+            PlatformBucketMappingDefinition:
+              "DestinyPlatformBucketMappingDefinition",
+            PlugSetDefinition: "DestinyPlugSetDefinition",
+            PowerCapDefinition: "DestinyPowerCapDefinition",
+            PresentationNodeDefinition: "DestinyPresentationNodeDefinition",
+            ProgressionDefinition: "DestinyProgressionDefinition",
+            ProgressionLevelRequirementDefinition:
+              "DestinyProgressionLevelRequirementDefinition",
+            RecordDefinition: "DestinyRecordDefinition",
+            RewardAdjusterPointerDefinition:
+              "DestinyRewardAdjusterPointerDefinition",
+            RewardAdjusterProgressionMapDefinition:
+              "DestinyRewardAdjusterProgressionMapDefinition",
+            RewardItemListDefinition: "DestinyRewardItemListDefinition",
+            SackRewardItemListDefinition: "DestinySackRewardItemListDefinition",
+            SandboxPatternDefinition: "DestinySandboxPatternDefinition",
+            SeasonDefinition: "DestinySeasonDefinition",
+            SeasonPassDefinition: "DestinySeasonPassDefinition",
+            SocketCategoryDefinition: "DestinySocketCategoryDefinition",
+            SocketTypeDefinition: "DestinySocketTypeDefinition",
+            TraitDefinition: "DestinyTraitDefinition",
+            TraitCategoryDefinition: "DestinyTraitCategoryDefinition",
+            UnlockCountMappingDefinition: "DestinyUnlockCountMappingDefinition",
+            UnlockEventDefinition: "DestinyUnlockEventDefinition",
+            UnlockExpressionMappingDefinition:
+              "DestinyUnlockExpressionMappingDefinition",
+            vendors: "DestinyVendorDefinition",
+            milestones: "DestinyMilestoneDefinition",
+            ActivityModifierDefinition: "DestinyActivityModifierDefinition",
+            ReportReasonCategoryDefinition:
+              "DestinyReportReasonCategoryDefinition",
+            ArtifactDefinition: "DestinyArtifactDefinition",
+            BreakerTypeDefinition: "DestinyBreakerTypeDefinition",
+            ChecklistDefinition: "DestinyChecklistDefinition",
+            EnergyTypeDefinition: "DestinyEnergyTypeDefinition",
+          };
         }
       }
 
