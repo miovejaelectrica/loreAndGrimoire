@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+    <!-- <script src="data.json" type="application/json"></script> -->
+    <!-- <script src="tracker.js" type="application/javascript"></script> -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
+
+    <title>Where is Xur</title>
+    <h1>ITEMS</h1>
+    <div id="items"></div>
+
+    <script>
+        class MagicFunLore extends HTMLElement {
+            connectedCallback() {
+                const API_ROOT_PATH = "https://www.bungie.net";
+                const PLATFORM = "/Platform";
+                // const API_ROOT_PATH = "https://www.bungie.net";
+                const AUTHORIZE = "https://www.bungie.net/en/OAuth/Authorize";
+                // const API_KEY = "d24cfacbe90b404782da36ed1ad8d5f8";
+                const API_KEY = "c68f8ef939094aee8b166c500e8773e3";
+                const CUSTOM_HEADERS = {
+                    "X-API-KEY": API_KEY,
+                    "Content-Type": "application/json",
+                };
+                const CORS_HEADERS = {
+                    "X-API-KEY": API_KEY,
+                    Accept: "application/json",
+                    "x-msw-bypass": true,
+                    "Access-Control-Allow-Origin": "*",
+                    "Control-Allow-Origin": "*",
+                };
+
+                const userId = "39198";
+                const membershipId = "4611686018464384293";
+                const warlockId = "2305843009452190400";
+
+                const AuthorizationURL = "https://www.bungie.net/en/OAuth/Authorize";
+                const TokenURL = "https://www.bungie.net/Platform/App/OAuth/token/";
+                const RefreshURL = "https://www.bungie.net/Platform/App/OAuth/token/";
+
+                let vendors = "/Destiny2/Vendors/";
+                let content = "/Destiny2/Manifest/";
+                let promiseList = [];
+                let loreList = [];
+                let availableVendors = [];
+                let availableDestinations = [];
+                let availableItems = [];
+                let availablePerks = [];
+                let vendorGroup = [];
+                var selectBox = document.createElement("select");
+                selectBox.addEventListener("change", (event) => {
+                    getLore(selectBox.value);
+                });
+
+                document.getElementById("content").appendChild(selectBox);
+
+                function init() {
+                    callEndpoint(
+                        AuthorizationURL,
+                        // API_ROOT_PATH + PLATFORM + content,
+                        // API_ROOT_PATH + PLATFORM + "/Destiny2/2/Profile/"+membershipId+"/Character/"+warlockId+"/Vendors/?components",
+                        // API_ROOT_PATH + PLATFORM + "/Destiny/2/Account/"+membershipId+"/",
+                        // API_ROOT_PATH + PLATFORM + "/User/GetMembershipsById/"+membershipId+"/2/",
+                        // API_ROOT_PATH + PLATFORM + "/User/GetBungieNetUserById/"+membershipId+"/",
+                        // API_ROOT_PATH + PLATFORM + "/User/GetMembershipsForCurrentUser/",
+                        // API_ROOT_PATH + PLATFORM + "/App/FirstParty/",
+                        CUSTOM_HEADERS
+                    ).then(
+                        function (response) {
+                            if (
+                                response.Response &&
+                                response.Response.jsonWorldContentPaths
+                            ) {
+                                loadLore(response.Response.jsonWorldContentPaths.es);
+                            }
+                        },
+                        function (error) { }
+                    );
+                }
+
+                function loadLore(url) {
+                    $.getJSON(API_ROOT_PATH + url).then(saveLore);
+                    $.getJSON(API_ROOT_PATH + "/common/destiny2_content/json/es/DestinyVendorDefinition-edde1f3a-f202-49d0-8a57-b8fe0295fec9.json").then(saveLore_new);
+                }
+
+                function saveLore_new(response) {
+                    // console.log("TRYING COSAS::: ", response);
+                    console.log(response["2190858386"]);
+                    
+                }
+                function saveLore(response) {
+                    // console.log("Esto que es", response, elements["milestones"], response[elements["milestones"]])
+                    // console.log("Esto que es VENDORS", response, elements["DestinationDefinition"], response[elements["DestinationDefinition"]])
+                    if (response[elements["DestinationDefinition"]]) {
+                        availableDestinations = LoadData(response, "DestinationDefinition");
+
+                    }
+
+                    if (response[elements["InventoryItemDefinition"]]) {
+                        availableItems = LoadData(response, "InventoryItemDefinition");
+                    }
+
+                    if (response[elements["SandboxPerkDefinition"]]) {
+                        availablePerks = LoadData(response, "SandboxPerkDefinition")
+                    }
+
+                    // if (response[elements["VendorGroup"]]) {
+                    //     vendorGroup = LoadData(response, "VendorGroup");
+                    // }
+
+
+                    if (response[elements["vendors"]]) {
+                        availableVendors = LoadData(response, "vendors");
+                    }
+
+                    let xurInfo = availableVendors.find(o => o.vendorIdentifier === "XUR");
+                    loadXurInfo(xurInfo);
+
+                }
+
+                function loadXurInfo(entry) {
+                    var foundPages = document.createElement("p");
+                    foundPages.style = "bold";
+                    // foundPages.innerHTML =
+                    //     "Vendedores encontrados: <u>" +
+                    //     Object.keys(response[elements["vendors"]]).length +
+                    //     "</u>";
+                    document.getElementById("numPages").appendChild(foundPages);
+                    loadLocation(entry);
+                    loadItems(entry);
+
+                    console.log("He encontrado a Xur!!", entry);
+                    var entryHTML = "<div><img src='" + API_ROOT_PATH + entry.displayProperties.largeIcon + "'/><h1>" + entry.displayProperties.name + "</h1>";
+                    entryHTML += "<h3>" + entry.displayProperties.description + "<h3></div>";
+                    document.getElementById("loreEntry").innerHTML = entryHTML;
+
+                }
+
+                function LoadData(response, dataGroup) {
+                    let container = [];
+
+                    Object.keys(response[elements[dataGroup]]).forEach((item) => {
+                        var currentVendor = response[elements[dataGroup]][item];
+                        container.push(currentVendor)
+                    });
+                    console.log(dataGroup + "::: ", container);
+                    return container;
+                }
+
+                function loadLocation(entry) {
+                    entry.locations.forEach((loc) => {
+                        let location = availableDestinations.find(o => o.hash === loc.destinationHash);
+                    });
+
+                }
+
+                function loadItems(entry) {
+                    entry.itemList.forEach((it) => {
+                        let item = availableItems.find(o => o.hash === it.itemHash);
+                        if (item.equippable) {
+                            var currentSpan = document.createElement('span');
+                            var spanCode = "<div><img id='" + item.hash + "_" + item.displayProperties.name + "' src = '" + API_ROOT_PATH + item.displayProperties.icon + "'/>";
+                            spanCode += "<p>" + item.displayProperties.name + "</p></div>"
+                            if (item.displayProperties.description) spanCode += "<p>" + item.displayProperties.description + "</p></div>"
+                            currentSpan.innerHTML = spanCode;
+                            document.getElementById("items").appendChild(currentSpan);
+                            if (item.displayProperties.name === 'Escarlata') {
+                                console.log("ITEM::: 3437746471", JSON.stringify(item));
+                                console.log("IT::: 3437746471", JSON.stringify(it));
+                            }
+                        }
+                    });
+                }
+
+                Promise.all(promiseList).then(function () {
+                    // constTable(finalTable);
+                });
+
+                function getLore(id) {
+                    if (loreList.length > 0) {
+                        var thisLore = loreList.find((lore) => lore.id === id);
+                        printLore(thisLore);
+                    }
+                }
+                init();
+
+                function callEndpoint(url, headers) {
+                    let prom = new Promise(function (fulfill, reject) {
+                        fetch(url, {
+                            method: "GET",
+                            headers: new Headers(headers),
+                            // mode: "cors",
+                            cache: "default",
+                        })
+                            .then((res) => res.json())
+                            .then((json) => fulfill(json))
+                            .catch((err) => reject(err));
+                    });
+                    promiseList.push(prom);
+                    return prom;
+                }
+
+                let elements = {
+                    NodeStepSummaryDefinition: "DestinyNodeStepSummaryDefinition",
+                    ArtDyeChannelDefinition: "DestinyArtDyeChannelDefinition",
+                    ArtDyeReferenceDefinition: "DestinyArtDyeReferenceDefinition",
+                    PlaceDefinition: "DestinyPlaceDefinition",
+                    ActivityDefinition: "DestinyActivityDefinition",
+                    ActivityTypeDefinition: "DestinyActivityTypeDefinition",
+                    ClassDefinition: "DestinyClassDefinition",
+                    GenderDefinition: "DestinyGenderDefinition",
+                    InventoryBucketDefinition: "DestinyInventoryBucketDefinition",
+                    RaceDefinition: "DestinyRaceDefinition",
+                    TalentGridDefinition: "DestinyTalentGridDefinition",
+                    UnlockDefinition: "DestinyUnlockDefinition",
+                    MaterialRequirementSetDefinition:
+                        "DestinyMaterialRequirementSetDefinition",
+                    SandboxPerkDefinition: "DestinySandboxPerkDefinition",
+                    StatGroupDefinition: "DestinyStatGroupDefinition",
+                    ProgressionMappingDefinition: "DestinyProgressionMappingDefinition",
+                    FactionDefinition: "DestinyFactionDefinition",
+                    VendorGroup: "DestinyVendorGroupDefinition",
+                    RewardSourceDefinition: "DestinyRewardSourceDefinition",
+                    UnlockValueDefinition: "DestinyUnlockValueDefinition",
+                    RewardMappingDefinition: "DestinyRewardMappingDefinition",
+                    RewardSheetDefinition: "DestinyRewardSheetDefinition",
+                    ItemCategoryDefinition: "DestinyItemCategoryDefinition",
+                    DamageTypeDefinition: "DestinyDamageTypeDefinition",
+                    ActivityModeDefinition: "DestinyActivityModeDefinition",
+                    MedalTierDefinition: "DestinyMedalTierDefinition",
+                    AchievementDefinition: "DestinyAchievementDefinition",
+                    ActivityGraphDefinition: "DestinyActivityGraphDefinition",
+                    ActivityInteractableDefinition:
+                        "DestinyActivityInteractableDefinition",
+                    BondDefinition: "DestinyBondDefinition",
+                    CharacterCustomizationCategoryDefinition:
+                        "DestinyCharacterCustomizationCategoryDefinition",
+                    CharacterCustomizationOptionDefinition:
+                        "DestinyCharacterCustomizationOptionDefinition",
+                    CollectibleDefinition: "DestinyCollectibleDefinition",
+                    DestinationDefinition: "DestinyDestinationDefinition",
+                    EntitlementOfferDefinition: "DestinyEntitlementOfferDefinition",
+                    EquipmentSlotDefinition: "DestinyEquipmentSlotDefinition",
+                    stats: "DestinyStatDefinition",
+                    InventoryItemDefinition: "DestinyInventoryItemDefinition",
+                    InventoryItemLiteDefinition: "DestinyInventoryItemLiteDefinition",
+                    ItemTierTypeDefinition: "DestinyItemTierTypeDefinition",
+                    locations: "DestinyLocationDefinition",
+                    lore: "DestinyLoreDefinition",
+                    MetricDefinition: "DestinyMetricDefinition",
+                    ObjectiveDefinition: "DestinyObjectiveDefinition",
+                    PlatformBucketMappingDefinition:
+                        "DestinyPlatformBucketMappingDefinition",
+                    PlugSetDefinition: "DestinyPlugSetDefinition",
+                    PowerCapDefinition: "DestinyPowerCapDefinition",
+                    PresentationNodeDefinition: "DestinyPresentationNodeDefinition",
+                    ProgressionDefinition: "DestinyProgressionDefinition",
+                    ProgressionLevelRequirementDefinition:
+                        "DestinyProgressionLevelRequirementDefinition",
+                    RecordDefinition: "DestinyRecordDefinition",
+                    RewardAdjusterPointerDefinition:
+                        "DestinyRewardAdjusterPointerDefinition",
+                    RewardAdjusterProgressionMapDefinition:
+                        "DestinyRewardAdjusterProgressionMapDefinition",
+                    RewardItemListDefinition: "DestinyRewardItemListDefinition",
+                    SackRewardItemListDefinition: "DestinySackRewardItemListDefinition",
+                    SandboxPatternDefinition: "DestinySandboxPatternDefinition",
+                    SeasonDefinition: "DestinySeasonDefinition",
+                    SeasonPassDefinition: "DestinySeasonPassDefinition",
+                    SocketCategoryDefinition: "DestinySocketCategoryDefinition",
+                    SocketTypeDefinition: "DestinySocketTypeDefinition",
+                    TraitDefinition: "DestinyTraitDefinition",
+                    TraitCategoryDefinition: "DestinyTraitCategoryDefinition",
+                    UnlockCountMappingDefinition: "DestinyUnlockCountMappingDefinition",
+                    UnlockEventDefinition: "DestinyUnlockEventDefinition",
+                    UnlockExpressionMappingDefinition:
+                        "DestinyUnlockExpressionMappingDefinition",
+                    vendors: "DestinyVendorDefinition",
+                    milestones: "DestinyMilestoneDefinition",
+                    ActivityModifierDefinition: "DestinyActivityModifierDefinition",
+                    ReportReasonCategoryDefinition:
+                        "DestinyReportReasonCategoryDefinition",
+                    ArtifactDefinition: "DestinyArtifactDefinition",
+                    BreakerTypeDefinition: "DestinyBreakerTypeDefinition",
+                    ChecklistDefinition: "DestinyChecklistDefinition",
+                    EnergyTypeDefinition: "DestinyEnergyTypeDefinition",
+                };
+            }
+        }
+
+        customElements.define("version-tracker", MagicFunLore);
+    </script>
+    <configuration>
+        <system.webServer>
+            <httpProtocol>
+                <customHeaders>
+                    <add name="Access-Control-Allow-Origin" value="http://example.net" />
+                    <add name="Access-Control-Allow-Methods" value="OPTIONS,POST" />
+                    <add name="Access-Control-Allow-Credentials" value="true" />
+                    <add name="Access-Control-Allow-Headers" value="Content-Type" />
+                </customHeaders>
+            </httpProtocol>
+        </system.webServer>
+    </configuration>
+</head>
+
+<body>
+    <div class="container col-xs-12">
+        <h1>Destiny2 Lore</h1>
+        <div id="content">
+            <version-tracker></version-tracker>
+            <div id="numPages"></div>
+            <div class="col-xs-12 col-md-8 border padding" id="loreEntry">
+                <h1 class="text-light bg-primary md-margin-top" id="loreTitle"></h1>
+                <p class="text-muted" id="loreSubTitle"></p>
+                <div id="loreDescription" class="text-primary md-margin-bottom"></div>
+            </div>
+        </div>
+        <!-- <nav aria-label="Page navigation example">
+        <ul class="pagination">
+          <li class="page-item">
+            <a class="page-link" href="#" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+              <span class="sr-only">Previous</span>
+            </a>
+          </li>
+          <li class="page-item"><a class="page-link" href="#">1</a></li>
+          <li class="page-item"><a class="page-link" href="#">2</a></li>
+          <li class="page-item"><a class="page-link" href="#">3</a></li>
+          <li class="page-item">
+            <a class="page-link" href="#" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+              <span class="sr-only">Next</span>
+            </a>
+          </li>
+        </ul>
+      </nav> -->
+    </div>
+</body>
+
+</html>
