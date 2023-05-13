@@ -63,9 +63,10 @@
 
                 function init() {
                     callEndpoint(
-                        AuthorizationURL,
+                        // TokenURL,
+                        // API_ROOT_PATH + PLATFORM + vendors,
                         // API_ROOT_PATH + PLATFORM + content,
-                        // API_ROOT_PATH + PLATFORM + "/Destiny2/2/Profile/"+membershipId+"/Character/"+warlockId+"/Vendors/?components",
+                        API_ROOT_PATH + PLATFORM + "/Destiny2/2/Profile/"+membershipId+"/Character/"+warlockId+"/Vendors/",
                         // API_ROOT_PATH + PLATFORM + "/Destiny/2/Account/"+membershipId+"/",
                         // API_ROOT_PATH + PLATFORM + "/User/GetMembershipsById/"+membershipId+"/2/",
                         // API_ROOT_PATH + PLATFORM + "/User/GetBungieNetUserById/"+membershipId+"/",
@@ -196,7 +197,7 @@
                         fetch(url, {
                             method: "GET",
                             headers: new Headers(headers),
-                            mode: "cors",
+                            // mode: "no-cors",
                             cache: "default",
                         })
                             .then((res) => res.json())
